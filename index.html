@@ -1,4 +1,458 @@
-<th className="pb-3">Статус</th>
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VEXA Market — Преміальний маркетплейс брендових речей</title>
+  <meta name="description" content="Купуйте та продавайте брендовий одяг, взуття, аксесуари. Безпечна угода Нова Пошта.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+  </style>
+</head>
+<body class="bg-neutral-950 text-neutral-100 min-h-screen">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const INITIAL_ITEMS = [
+      {
+        id: 1,
+        title: "Кросівки On Cloudrunner 3 Black",
+        brand: "On Running",
+        category: "Взуття",
+        price: 5200,
+        originalPrice: 6800,
+        size: "EU 43 / 27.5 cm",
+        condition: "Ідеальний",
+        city: "Одеса",
+        image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
+        isVip: true,
+        seller: "Арсеній"
+      },
+      {
+        id: 2,
+        title: "Куртка Karl Lagerfeld Reversible Bomber",
+        brand: "Karl Lagerfeld",
+        category: "Верхній одяг",
+        price: 8900,
+        originalPrice: 14500,
+        size: "L / 50",
+        condition: "Новий з бірками",
+        city: "Київ",
+        image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=80",
+        isVip: true,
+        seller: "Максим"
+      },
+      {
+        id: 3,
+        title: "Парфум Jean Paul Gaultier Le Male Elixir 75ml",
+        brand: "Jean Paul Gaultier",
+        category: "Парфумерія",
+        price: 3800,
+        originalPrice: 4900,
+        size: "70/75 мл",
+        condition: "Відкритий флакон",
+        city: "Львів",
+        image: "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=800&q=80",
+        isVip: false,
+        seller: "Дмитро"
+      },
+      {
+        id: 4,
+        title: "Лонгслів BOSS Contrast Logo Relaxed",
+        brand: "Hugo Boss",
+        category: "Одяг",
+        price: 3100,
+        originalPrice: 5200,
+        size: "M / 48",
+        condition: "Відмінний",
+        city: "Одеса",
+        image: "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=800&q=80",
+        isVip: false,
+        seller: "Арсеній"
+      }
+    ];
+
+    function App() {
+      const [view, setView] = useState("catalog");
+      const [items, setItems] = useState(INITIAL_ITEMS);
+      const [activeCategory, setActiveCategory] = useState("Всі");
+      const [searchQuery, setSearchQuery] = useState("");
+      const [selectedItem, setSelectedItem] = useState(null);
+      const [commissionRate, setCommissionRate] = useState(7);
+      const [vipPrice, setVipPrice] = useState(150);
+      const [adminEarnings, setAdminEarnings] = useState(1850);
+      const [orders, setOrders] = useState([
+        { id: "ORD-9421", item: "Air Jordan 4 Retro", price: 7400, fee: 518, status: "Завершено" },
+        { id: "ORD-9418", item: "Tesla Model 3 Brake Pads", price: 4200, fee: 294, status: "В дорозі" },
+        { id: "ORD-9402", item: "Mancera Cedrat Boise 120ml", price: 3400, fee: 238, status: "Завершено" }
+      ]);
+
+      const [newTitle, setNewTitle] = useState("");
+      const [newBrand, setNewBrand] = useState("");
+      const [newCategory, setNewCategory] = useState("Одяг");
+      const [newPrice, setNewPrice] = useState("");
+      const [newSize, setNewSize] = useState("");
+      const [newCity, setNewCity] = useState("Одеса");
+      const [isVipSelected, setIsVipSelected] = useState(true);
+
+      const priceNum = Number(newPrice) || 0;
+      const calculatedFee = Math.round((priceNum * commissionRate) / 100);
+      const sellerPayout = Math.max(0, priceNum - calculatedFee);
+
+      const filteredItems = items.filter(it => {
+        const matchesCategory = activeCategory === "Всі" || it.category === activeCategory;
+        const matchesSearch = it.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              it.brand.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesCategory && matchesSearch;
+      });
+
+      const handlePublish = (e) => {
+        e.preventDefault();
+        if (!newTitle || !newPrice) return;
+        const newItem = {
+          id: Date.now(),
+          title: newTitle,
+          brand: newBrand || "Бренд",
+          category: newCategory,
+          price: priceNum,
+          size: newSize || "Універсальний",
+          condition: "Відмінний",
+          city: newCity,
+          image: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=800&q=80",
+          isVip: isVipSelected,
+          seller: "Ви"
+        };
+        setItems([newItem, ...items]);
+        if (isVipSelected) setAdminEarnings(prev => prev + vipPrice);
+        setView("catalog");
+      };
+
+      const handleBuy = (item) => {
+        const fee = Math.round((item.price * commissionRate) / 100);
+        setAdminEarnings(prev => prev + fee);
+        setOrders([
+          {
+            id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+            item: item.title,
+            price: item.price,
+            fee: fee,
+            status: "Очікує відправки"
+          },
+          ...orders
+        ]);
+        alert("Замовлення успішно оформлено! Кошти заморожено на захищеному рахунку.");
+        setSelectedItem(null);
+      };
+
+      return (
+        <div className="flex flex-col min-h-screen">
+          <header className="sticky top-0 z-40 bg-neutral-900/90 backdrop-blur-md border-b border-neutral-800">
+            <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-6">
+                <button onClick={() => setView("catalog")} className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-black font-black text-lg">V</span>
+                  <span>VEXA</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 font-normal">Market</span>
+                </button>
+                <div className="hidden md:flex gap-1">
+                  {["Всі", "Одяг", "Взуття", "Верхній одяг", "Парфумерія"].map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => { setActiveCategory(cat); setView("catalog"); }}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${activeCategory === cat ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:text-white'}`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setView("admin")}
+                  className={`px-3 py-2 rounded-xl text-sm font-medium border flex items-center gap-2 transition ${view === 'admin' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400' : 'border-neutral-800 text-neutral-300 hover:bg-neutral-800'}`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Кабінет власника
+                </button>
+                <button
+                  onClick={() => setView("sell")}
+                  className="px-4 py-2 rounded-xl text-sm font-bold bg-white text-black hover:bg-neutral-200 transition shadow-lg shadow-white/5"
+                >
+                  + Продати річ
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
+            {view === "catalog" && (
+              <div>
+                <div className="p-8 rounded-3xl bg-neutral-900 border border-neutral-800 mb-8 relative overflow-hidden">
+                  <div className="relative z-10 max-w-2xl">
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2 block">Преміум Ресейл & Безпечна Угода</span>
+                    <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-white">
+                      Купуй оригінал, продавай свій гардероб
+                    </h1>
+                    <div className="flex gap-2 bg-neutral-950 p-2 rounded-2xl border border-neutral-800">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Шукати On Running, Karl Lagerfeld, Jordan, BOSS..."
+                        className="bg-transparent px-4 py-2 w-full outline-none text-white text-sm"
+                      />
+                      <button className="px-5 py-2.5 bg-emerald-500 text-black font-bold rounded-xl text-sm hover:bg-emerald-400 transition">
+                        Знайти
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                  {filteredItems.map((item) => {
+                    const itemFee = Math.round((item.price * commissionRate) / 100);
+                    return (
+                      <div
+                        key={item.id}
+                        className="group bg-neutral-900 rounded-2xl border border-neutral-800 overflow-hidden hover:border-neutral-700 transition flex flex-col cursor-pointer"
+                        onClick={() => setSelectedItem(item)}
+                      >
+                        <div className="aspect-[4/3] bg-neutral-800 relative overflow-hidden">
+                          <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                          {item.isVip && (
+                            <span className="absolute top-3 left-3 bg-gradient-to-r from-amber-400 to-amber-600 text-black text-xs font-black px-2 py-0.5 rounded-md uppercase tracking-wide">
+                              VIP ТОП
+                            </span>
+                          )}
+                          <span className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-emerald-400 text-xs font-semibold px-2 py-1 rounded-md border border-white/10">
+                            Комісія: +{itemFee} ₴
+                          </span>
+                        </div>
+
+                        <div className="p-4 flex-1 flex flex-col justify-between">
+                          <div>
+                            <div className="text-xs text-neutral-400 font-semibold mb-1 uppercase tracking-wider">{item.brand}</div>
+                            <h3 className="font-bold text-white text-sm leading-snug line-clamp-2 mb-2">{item.title}</h3>
+                            <div className="flex items-center gap-2 text-xs text-neutral-400 mb-3">
+                              <span className="bg-neutral-800 px-2 py-0.5 rounded">{item.size}</span>
+                              <span>•</span>
+                              <span>{item.city}</span>
+                            </div>
+                          </div>
+
+                          <div className="pt-3 border-t border-neutral-800 flex items-center justify-between">
+                            <div>
+                              <div className="text-lg font-extrabold text-white">{item.price.toLocaleString()} ₴</div>
+                              {item.originalPrice && (
+                                <div className="text-xs text-neutral-500 line-through">{item.originalPrice.toLocaleString()} ₴</div>
+                              )}
+                            </div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setSelectedItem(item); }}
+                              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-neutral-800 text-white hover:bg-emerald-500 hover:text-black transition"
+                            >
+                              Купити
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {view === "sell" && (
+              <div className="max-w-2xl mx-auto py-4">
+                <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 sm:p-8">
+                  <h2 className="text-2xl font-black text-white mb-1">Подати оголошення</h2>
+                  <p className="text-sm text-neutral-400 mb-6">Ви отримаєте виплату на картку після завершення угоди покупцем.</p>
+
+                  <form onSubmit={handlePublish} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1">Назва товару</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Наприклад: Кросівки On Cloudrunner 3 M"
+                        value={newTitle}
+                        onChange={(e) => setNewTitle(e.target.value)}
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-white outline-none text-sm"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1">Бренд</label>
+                        <input
+                          type="text"
+                          placeholder="On Running, Karl Lagerfeld..."
+                          value={newBrand}
+                          onChange={(e) => setNewBrand(e.target.value)}
+                          className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-white outline-none text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1">Категорія</label>
+                        <select
+                          value={newCategory}
+                          onChange={(e) => setNewCategory(e.target.value)}
+                          className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-white outline-none text-sm"
+                        >
+                          <option>Одяг</option>
+                          <option>Взуття</option>
+                          <option>Верхній одяг</option>
+                          <option>Парфумерія</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1">Розмір</label>
+                        <input
+                          type="text"
+                          placeholder="EU 43 / L 50"
+                          value={newSize}
+                          onChange={(e) => setNewSize(e.target.value)}
+                          className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-white outline-none text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1">Місто</label>
+                        <input
+                          type="text"
+                          value={newCity}
+                          onChange={(e) => setNewCity(e.target.value)}
+                          className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-white outline-none text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1">Ціна продажу (грн)</label>
+                      <input
+                        type="number"
+                        required
+                        placeholder="Наприклад: 5500"
+                        value={newPrice}
+                        onChange={(e) => setNewPrice(e.target.value)}
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-white outline-none font-bold text-lg"
+                      />
+                    </div>
+
+                    {priceNum > 0 && (
+                      <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-2">
+                        <div className="flex justify-between text-xs text-neutral-400">
+                          <span>Комісія сайту ({commissionRate}%):</span>
+                          <span className="text-rose-400 font-semibold">-{calculatedFee} ₴</span>
+                        </div>
+                        <div className="flex justify-between text-sm font-bold text-white pt-2 border-t border-neutral-800">
+                          <span>Ви отримаєте на картку:</span>
+                          <span className="text-emerald-400 text-base">{sellerPayout} ₴</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div
+                      onClick={() => setIsVipSelected(!isVipSelected)}
+                      className={`p-4 rounded-2xl border cursor-pointer transition flex items-center justify-between ${isVipSelected ? 'border-amber-500/60 bg-amber-500/10' : 'border-neutral-800 bg-neutral-950'}`}
+                    >
+                      <div>
+                        <div className="font-bold text-sm text-white flex items-center gap-2">
+                          <span>🔥 VIP-закріплення у ТОП</span>
+                          <span className="text-xs text-amber-400 font-black">+{vipPrice} ₴</span>
+                        </div>
+                        <p className="text-xs text-neutral-400 mt-0.5">В 4 рази більше переглядів у стрічці сайту</p>
+                      </div>
+                      <input type="checkbox" checked={isVipSelected} readOnly className="w-5 h-5 accent-amber-500" />
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => setView("catalog")}
+                        className="flex-1 py-3 rounded-xl border border-neutral-800 text-sm font-semibold text-neutral-400 hover:text-white"
+                      >
+                        Скасувати
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 py-3 rounded-xl bg-emerald-500 text-black text-sm font-black hover:bg-emerald-400 transition"
+                      >
+                        Опублікувати товар
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {view === "admin" && (
+              <div className="max-w-4xl mx-auto space-y-6">
+                <div>
+                  <h2 className="text-2xl font-black text-white">Панель власника платформи</h2>
+                  <p className="text-sm text-neutral-400">Управління комісіями сайту, транзакціями та прибутком.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-5 rounded-2xl bg-neutral-900 border border-neutral-800">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Зароблено комісій</span>
+                    <div className="text-3xl font-black text-emerald-400 mt-2">{adminEarnings.toLocaleString()} ₴</div>
+                    <span className="text-xs text-neutral-500 mt-1 block">Доступно до виведення</span>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-neutral-900 border border-neutral-800">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Твоя ставка комісії</span>
+                    <div className="text-3xl font-black text-white mt-2">{commissionRate}%</div>
+                    <input
+                      type="range"
+                      min="3"
+                      max="15"
+                      value={commissionRate}
+                      onChange={(e) => setCommissionRate(Number(e.target.value))}
+                      className="w-full mt-3 accent-emerald-500 cursor-pointer"
+                    />
+                    <span className="text-xs text-neutral-500">Регулюється від 3% до 15%</span>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-neutral-900 border border-neutral-800">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Ціна VIP-просування</span>
+                    <div className="text-3xl font-black text-amber-400 mt-2">{vipPrice} ₴</div>
+                    <input
+                      type="range"
+                      min="50"
+                      max="500"
+                      step="25"
+                      value={vipPrice}
+                      onChange={(e) => setVipPrice(Number(e.target.value))}
+                      className="w-full mt-3 accent-amber-500 cursor-pointer"
+                    />
+                    <span className="text-xs text-neutral-500">За 7 днів у ТОП</span>
+                  </div>
+                </div>
+
+                <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6">
+                  <h3 className="font-bold text-white text-base mb-4">Останні транзакції (Безпечні угоди)</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead className="border-b border-neutral-800 text-xs uppercase text-neutral-500">
+                        <tr>
+                          <th className="pb-3">ID Угоди</th>
+                          <th className="pb-3">Товар</th>
+                          <th className="pb-3">Сума</th>
+                          <th className="pb-3">Комісія сайту</th>
+                          <th className="pb-3">Статус</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-800">
@@ -23,7 +477,6 @@
             )}
           </main>
 
-          {/* Modal Purchase */}
           {selectedItem && (
             <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
               <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-lg w-full p-6 relative">
@@ -62,7 +515,6 @@
             </div>
           )}
 
-          {/* Footer */}
           <footer className="border-t border-neutral-900 bg-neutral-950 py-8 text-center text-xs text-neutral-500">
             © 2026 VEXA Market. Усі права захищено. Безпечний сервіс оголошень та ресейлу.
           </footer>
@@ -73,4 +525,4 @@
     ReactDOM.render(<App />, document.getElementById("root"));
   </script>
 </body>
-</html>
+</html>           
