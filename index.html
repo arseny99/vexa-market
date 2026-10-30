@@ -1,0 +1,76 @@
+<th className="pb-3">Статус</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-800">
+                        {orders.map((ord) => (
+                          <tr key={ord.id} className="text-neutral-300">
+                            <td className="py-3 font-mono text-xs">{ord.id}</td>
+                            <td className="py-3 font-medium text-white">{ord.item}</td>
+                            <td className="py-3">{ord.price.toLocaleString()} ₴</td>
+                            <td className="py-3 font-bold text-emerald-400">+{ord.fee} ₴</td>
+                            <td className="py-3">
+                              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                {ord.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </main>
+
+          {/* Modal Purchase */}
+          {selectedItem && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-neutral-900 border border-neutral-800 rounded-3xl max-w-lg w-full p-6 relative">
+                <button
+                  onClick={() => setSelectedItem(null)}
+                  className="absolute top-4 right-4 text-neutral-400 hover:text-white text-lg font-bold"
+                >
+                  ✕
+                </button>
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 block mb-1">Безпечна угода VEXA Escrow</span>
+                <h3 className="text-xl font-black text-white mb-2">{selectedItem.title}</h3>
+                <div className="text-2xl font-black text-white mb-4">{selectedItem.price.toLocaleString()} ₴</div>
+
+                <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 space-y-2 mb-4 text-xs text-neutral-300">
+                  <div className="flex justify-between">
+                    <span>Доставка:</span>
+                    <span className="text-white font-semibold">Нова Пошта (Огляд у відділенні)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Гарантія безпеки:</span>
+                    <span className="text-emerald-400 font-semibold">Гроші резервуються сервісом</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Комісія платформи:</span>
+                    <span>Включена у вартість ({Math.round((selectedItem.price * commissionRate) / 100)} ₴)</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleBuy(selectedItem)}
+                  className="w-full py-3.5 rounded-xl bg-emerald-500 text-black font-black text-sm hover:bg-emerald-400 transition"
+                >
+                  Оплатити Безпечною Угодою ({selectedItem.price.toLocaleString()} ₴)
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Footer */}
+          <footer className="border-t border-neutral-900 bg-neutral-950 py-8 text-center text-xs text-neutral-500">
+            © 2026 VEXA Market. Усі права захищено. Безпечний сервіс оголошень та ресейлу.
+          </footer>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById("root"));
+  </script>
+</body>
+</html>
