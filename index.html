@@ -15,10 +15,9 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Supabase JS Client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Supabase JS Client (стабильная версия) -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -33,12 +32,19 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
 
-    // Подключение к вашей базе Supabase
+    // Подключение к Supabase
     const SUPABASE_URL = 'https://qvhufbeqgjzptqapniyt.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_h4aHclSSvA8PvQVKIEOipw_-itHcvUc';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    let supabase = null;
+    try {
+      if (window.supabase) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      }
+    } catch (e) {
+      console.error('Помилка підключення до Supabase:', e);
+    }
 
-    // Пароль для доступа в кабинет владельца
     const ADMIN_PASSCODE = '2026';
 
     const CATEGORIES = [
@@ -55,12 +61,11 @@
       const [items, setItems] = useState([]);
       const [loading, setLoading] = useState(true);
 
-      // Модальные окна
       const [isSellModalOpen, setIsSellModalOpen] = useState(false);
       const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
       const [selectedItem, setSelectedItem] = useState(null);
 
-      // Состояния формы добавления товара
+      // Форма добавления
       const [title, setTitle] = useState('');
       const [price, setPrice] = useState('');
       const [category, setCategory] = useState('outerwear');
@@ -68,87 +73,85 @@
       const [description, setDescription] = useState('');
       const [isSubmitting, setIsSubmitting] = useState(false);
 
-      // Состояния админки
+      // Админка
       const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
       const [adminPassInput, setAdminPassInput] = useState('');
       const [commissionRate, setCommissionRate] = useState(7);
       const [vipPrice, setVipPrice] = useState(150);
 
-      // Загрузка товаров из облачной базы при запуске
       useEffect(() => {
-        fetchProducts();
+        loadData();
       }, []);
 
-      async function fetchProducts() {
+      async function loadData() {
         setLoading(true);
+        if (!supabase) {
+          setLoading(false);
+          return;
+        }
         try {
           const { data, error } = await supabase
             .from('products')
             .select('*')
             .order('created_at', { ascending: false });
 
-          if (error) throw error;
-          if (data) setItems(data);
+          if (!error && data) {
+            setItems(data);
+          }
         } catch (err) {
-          console.error('Помилка завантаження товарів:', err.message);
+          console.error(err);
         } finally {
           setLoading(false);
         }
       }
 
-      // Добавление товара в Supabase
       async function handleCreateProduct(e) {
         e.preventDefault();
         if (!title || !price) {
-          alert('Будь ласка, вкажіть назву та ціну товару');
+          alert('Вкажіть назву та ціну');
           return;
         }
 
         setIsSubmitting(true);
-        try {
-          const fallbackImg = 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800&auto=format&fit=crop&q=80';
-          
-          const newProduct = {
-            title: title.trim(),
-            price: Number(price),
-            category: category,
-            image_url: imageUrl.trim() || fallbackImg,
-            description: description.trim(),
-            status: 'available'
-          };
+        const fallbackImg = 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800&auto=format&fit=crop&q=80';
+        const newProduct = {
+          title: title.trim(),
+          price: Number(price),
+          category: category,
+          image_url: imageUrl.trim() || fallbackImg,
+          description: description.trim(),
+          status: 'available'
+        };
 
-          const { data, error } = await supabase
-            .from('products')
-            .insert([newProduct])
-            .select();
+        if (supabase) {
+          try {
+            const { data, error } = await supabase
+              .from('products')
+              .insert([newProduct])
+              .select();
 
-          if (error) throw error;
-
-          if (data && data[0]) {
-            setItems([data[0], ...items]);
+            if (!error && data && data[0]) {
+              setItems([data[0], ...items]);
+            }
+          } catch (err) {
+            alert('Помилка: ' + err.message);
           }
-
-          // Очистка формы и закрытие окна
-          setTitle('');
-          setPrice('');
-          setImageUrl('');
-          setDescription('');
-          setIsSellModalOpen(false);
-          alert('Товар успішно виставлено на VEXA Market!');
-        } catch (err) {
-          alert('Помилка при додаванні товару: ' + err.message);
-        } finally {
-          setIsSubmitting(false);
         }
+
+        setTitle('');
+        setPrice('');
+        setImageUrl('');
+        setDescription('');
+        setIsSellModalOpen(false);
+        setIsSubmitting(false);
       }
 
-      // Проверка пароля в админку
       function handleAdminLogin(e) {
         e.preventDefault();
         if (adminPassInput === ADMIN_PASSCODE) {
           setIsAdminAuthenticated(true);
         } else {
-          alert('Невірний пароль доступу!');
+          alert('Невірний пароль!');
           setAdminPassInput('');
         }
       }
@@ -159,7 +162,6 @@
 
       return (
         <div className="min-h-screen flex flex-col justify-between">
-          {/* Верхняя навигация */}
           <header className="border-b border-neutral-900 bg-neutral-950/80 backdrop-blur sticky top-0 z-40">
             <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -187,8 +189,7 @@
               </div>
             </div>
 
-            {/* Категории */}
-            <div className="max-w-6xl mx-auto px-4 flex gap-2 overflow-x-auto pb-3 pt-1 scrollbar-none">
+            <div className="max-w-6xl mx-auto px-4 flex gap-2 overflow-x-auto pb-3 pt-1">
               {CATEGORIES.map(cat => (
                 <button
                   key={cat.id}
@@ -205,16 +206,15 @@
             </div>
           </header>
 
-          {/* Каталог товаров */}
           <main className="max-w-6xl mx-auto px-4 py-8 flex-1 w-full">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-lg font-bold">Останні пропозиції</h1>
-              <span className="text-xs text-neutral-500">Товарів у базі: {items.length}</span>
+              <span className="text-xs text-neutral-500">Товарів: {items.length}</span>
             </div>
 
             {loading ? (
               <div className="py-24 text-center text-neutral-500 text-sm">
-                Завантаження товарів із бази VEXA...
+                Завантаження товарів із бази...
               </div>
             ) : filteredItems.length === 0 ? (
               <div className="py-24 text-center border border-dashed border-neutral-800 rounded-2xl p-8">
@@ -262,7 +262,6 @@
             )}
           </main>
 
-          {/* Модальное окно: Добавить товар */}
           {isSellModalOpen && (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-neutral-900 border border-neutral-800 w-full max-w-md rounded-2xl p-6 relative">
@@ -280,7 +279,7 @@
                     <input
                       type="text"
                       required
-                      placeholder="напр. Пуховик Moncler / Nike Air Force"
+                      placeholder="Пуховик / Кросівки"
                       value={title}
                       onChange={e => setTitle(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-xs focus:border-emerald-500 outline-none"
@@ -324,14 +323,13 @@
                       onChange={e => setImageUrl(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-xs focus:border-emerald-500 outline-none"
                     />
-                    <span className="text-[10px] text-neutral-500 mt-0.5 block">Якщо залишити порожнім — підставиться стандартне фото</span>
                   </div>
 
                   <div>
                     <label className="block text-[11px] text-neutral-400 mb-1">Опис товару</label>
                     <textarea
                       rows="2"
-                      placeholder="Стан, розмір, нюанси..."
+                      placeholder="Стан, розмір..."
                       value={description}
                       onChange={e => setDescription(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-xs focus:border-emerald-500 outline-none resize-none"
@@ -343,14 +341,13 @@
                     disabled={isSubmitting}
                     className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs transition mt-2 disabled:opacity-50"
                   >
-                    {isSubmitting ? 'Публікація в базу...' : 'Опублікувати оголошення'}
+                    {isSubmitting ? 'Публікація...' : 'Опублікувати'}
                   </button>
                 </form>
               </div>
             </div>
           )}
 
-          {/* Модальное окно: Просмотр товара и покупка */}
           {selectedItem && (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-neutral-900 border border-neutral-800 w-full max-w-sm rounded-2xl p-6 relative">
@@ -360,47 +357,28 @@
                 >
                   ✕
                 </button>
-
                 <div className="aspect-square bg-neutral-950 rounded-xl overflow-hidden mb-4">
                   <img
-                    src={selectedItem.image_url || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800&auto=format&fit=crop&q=80'}
+                    src={selectedItem.image_url}
                     alt={selectedItem.title}
                     className="w-full h-full object-cover"
                   />
                 </div>
-
                 <h3 className="text-base font-bold mb-1">{selectedItem.title}</h3>
-                <p className="text-xs text-neutral-400 mb-4">{selectedItem.description || 'Опис відсутній'}</p>
-
-                <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800 space-y-1.5 mb-4 text-xs">
-                  <div className="flex justify-between text-neutral-400">
-                    <span>Ціна товару:</span>
-                    <span className="font-semibold text-white">{Number(selectedItem.price).toLocaleString()} ₴</span>
-                  </div>
-                  <div className="flex justify-between text-neutral-400">
-                    <span>Комісія сервісу ({commissionRate}%):</span>
-                    <span>{Math.round((selectedItem.price * commissionRate) / 100)} ₴</span>
-                  </div>
-                  <div className="border-t border-neutral-800 pt-1.5 flex justify-between font-bold text-emerald-400">
-                    <span>До сплати:</span>
-                    <span>{Number(selectedItem.price).toLocaleString()} ₴</span>
-                  </div>
-                </div>
-
+                <p className="text-xs text-neutral-400 mb-4">{selectedItem.description}</p>
                 <button
                   onClick={() => {
-                    alert('Замовлення оформлено! Гроші холдуються сервісом до перевірки у відділенні Нової Пошти.');
+                    alert('Замовлення оформлено через Безпечну Угоду!');
                     setSelectedItem(null);
                   }}
                   className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-extrabold text-xs transition"
                 >
-                  Оплатити Безпечною Угодою ({Number(selectedItem.price).toLocaleString()} ₴)
+                  Оплатити ({Number(selectedItem.price).toLocaleString()} ₴)
                 </button>
               </div>
             </div>
           )}
 
-          {/* Модальное окно: Кабинет владельца с паролем */}
           {isAdminModalOpen && (
             <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
               <div className="bg-neutral-900 border border-neutral-800 w-full max-w-xl rounded-2xl p-6 relative">
@@ -414,10 +392,9 @@
                 {!isAdminAuthenticated ? (
                   <form onSubmit={handleAdminLogin} className="space-y-4 max-w-xs mx-auto py-6 text-center">
                     <h3 className="text-base font-bold">Вхід у кабінет власника</h3>
-                    <p className="text-xs text-neutral-400">Введіть PIN-код для доступу до фінансів та комісій</p>
                     <input
                       type="password"
-                      placeholder="Введіть PIN (за замовчуванням 2026)"
+                      placeholder="Введіть PIN (2026)"
                       value={adminPassInput}
                       onChange={e => setAdminPassInput(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-center text-sm outline-none focus:border-emerald-500"
@@ -431,23 +408,15 @@
                   </form>
                 ) : (
                   <div>
-                    <div className="flex items-center justify-between mb-6 pb-3 border-b border-neutral-800">
-                      <div>
-                        <h2 className="text-base font-bold">Панель власника платформи</h2>
-                        <p className="text-xs text-neutral-400">Керування комісіями сайту та прибутком</p>
-                      </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        Admin Online
-                      </span>
-                    </div>
-
+                    <h2 className="text-base font-bold mb-1">Панель власника платформи</h2>
+                    <p className="text-xs text-neutral-400 mb-6">Керування комісіями сайту та прибутком</p>
                     <div className="grid grid-cols-3 gap-3 mb-6">
                       <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800">
-                        <span className="text-[10px] text-neutral-400 block mb-1">Зароблено комісій</span>
+                        <span className="text-[10px] text-neutral-400 block mb-1">Зароблено</span>
                         <span className="text-lg font-extrabold text-emerald-400">1 850 ₴</span>
                       </div>
                       <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800">
-                        <span className="text-[10px] text-neutral-400 block mb-1">Твоя ставка</span>
+                        <span className="text-[10px] text-neutral-400 block mb-1">Ставка</span>
                         <span className="text-lg font-extrabold text-white">{commissionRate}%</span>
                       </div>
                       <div className="bg-neutral-950 p-3 rounded-xl border border-neutral-800">
@@ -455,8 +424,21 @@
                         <span className="text-lg font-extrabold text-amber-400">{vipPrice} ₴</span>
                       </div>
                     </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
-                    <div className="space-y-4">
-                      <div>
-                        <div className="flex justify-between text-xs mb-1.5">
-                          <span className="text-neutral-
+          <footer className="border-t border-neutral-900 bg-neutral-950 py-8 text-center text-xs text-neutral-500">
+            © 2026 VEXA Market. Усі права захищено. Безпечний сервіс оголошень та ресейлу.
+          </footer>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
